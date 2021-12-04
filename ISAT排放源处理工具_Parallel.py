@@ -10,7 +10,7 @@ import subprocess
 import netCDF4 as nc
 import shutil
 
-# Test
+# Test done
 
 def run(ADDL, mouthList):
     # cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
