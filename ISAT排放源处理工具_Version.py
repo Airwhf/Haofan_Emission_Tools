@@ -265,6 +265,9 @@ def build_emission(gridPath, date, sourceDirPath, speciateDirPath, temporaryDirP
     delta = end_date - start_date
     delta_day = r'%.3d' % (int(delta / pd.Timedelta(1, 'D')) + 1)
 
+    # 复制grid_path文件
+    shutil.copy(gridPath, f'{gridPath}_{start_year}{delta_day}')
+    gridPath = f'{gridPath}_{start_year}{delta_day}'
     gridData = nc.Dataset(gridPath, 'a')
     gridData.setncattr('SDATE', int(f'{start_year}{delta_day}'))
     gridData.close()
@@ -324,6 +327,8 @@ def build_emission(gridPath, date, sourceDirPath, speciateDirPath, temporaryDirP
 
         # 删除临时脚本文件
         os.remove(scriptName)
+        # 删除临时gridpath
+        os.remove(gridPath)
 
     # 删除工作空间
     shutil.rmtree(ISAT_M_Path)
@@ -363,30 +368,30 @@ if __name__ == '__main__':
 
     # 全局变量
     # 设置处理清单的起始时间
-    startDate = '2020-01-01'
+    startDate = '2021-12-01'
     # 设置处理清单的结束时间
-    endDate = '2020-12-31'
+    endDate = '2021-12-31'
 
-    CTRL_SOURCE = False
+    CTRL_SOURCE = True
     # 如果需要构建Source文件----------------------------------------------------------
     # 设置标识符
-    ADDL = '2020'
+    ADDL = '2021'
     # 设置使用的清单年份
-    emission_year = f'{ADDL}'
+    emission_year = f'2017'
     # 设置输出路径
-    output_Dir = f'H:/emission/{ADDL}'
+    output_Dir = f'E:/Chengdu_emis/{ADDL}'
     # 设置MEIC矢量网格路径
-    MEIC_GRID = 'E:/Kai Wu/NC转网格.shp'
+    MEIC_GRID = 'G:/domain/Chengdu-3km/NC转网格/2017_01_agriculture_NH3—矢量化.shp'
     # 设置MEIC清单目录
-    MEIC_DIR = f'E:/MEIC/{ADDL}'
+    MEIC_DIR = f'E:/MEIC/2017'
     # 设置分配因子文件
-    factorDirPath = 'E:/Kai Wu/factor'
+    factorDirPath = 'E:/成都网格/factor'
     # 设置ISAT.toolkit路径(绝对路径)
     toolkitPath = 'G:/python_project/Haofan_Emission_Tools/ISAT.toolkit'
 
     # 如果不需要构建Source文件---------------------------------------------------------
     # GRIDCRO2D文件路径
-    gridPath = 'E:/Kai Wu/mcip/GRIDCRO2D_2019094.nc'
+    gridPath = 'D:/Model/build_cmaq/CMAQ-master/data/chengdu_pa/mcip/GRIDCRO2D_211203.nc'
     # 物种谱分配文件目录
     #   将名称设置为 speciate_{nameLabel} 格式
     speciateDirPath = 'E:/ISAT/清单制作常用文件/物种分配系数案例'
@@ -396,9 +401,9 @@ if __name__ == '__main__':
     #   月  分配谱名称为 mouthly.csv
     temporaryDirPath = 'E:/ISAT/清单制作常用文件/时间分配系数案例'
     # 源网格排放文件存放路径
-    sourceDirPath = f'H:/emission/{ADDL}/match'
+    sourceDirPath = f'E:/Chengdu_emis/{ADDL}/match'
     # 输出文件路径
-    outputDirPath = f'H:/emission/{ADDL}/CMAQ'
+    outputDirPath = f'E:/Chengdu_emis/{ADDL}/CMAQ'
     # 并行CPU数量
     thread_number = 24
 
@@ -417,17 +422,16 @@ if __name__ == '__main__':
     if CTRL_SOURCE:
         # 构建source文件
         build_source(ADDL, emission_year, mouthList, output_Dir, MEIC_GRID, MEIC_DIR, factorDirPath, toolkitPath)
-    else:
-        # build_emission(gridPath, date, sourceDirPath, speciateDirPath, temporaryDirPath, outputDirPath)
-        pool = threadpool.ThreadPool(thread_number)
-        # 构建参数表
-        func_var = []
-        for date in date_grid_list:
-            lst_vars = ([gridPath, date, sourceDirPath, speciateDirPath, temporaryDirPath, outputDirPath], None)
-            func_var.append(lst_vars)
 
-        # 启动线程池
-        requests = threadpool.makeRequests(build_emission, func_var)
-        [pool.putRequest(req) for req in requests]
-        pool.wait()
+    pool = threadpool.ThreadPool(thread_number)
+    # 构建参数表
+    func_var = []
+    for date in date_grid_list:
+        lst_vars = ([gridPath, date, sourceDirPath, speciateDirPath, temporaryDirPath, outputDirPath], None)
+        func_var.append(lst_vars)
+
+    # 启动线程池
+    requests = threadpool.makeRequests(build_emission, func_var)
+    [pool.putRequest(req) for req in requests]
+    pool.wait()
 
